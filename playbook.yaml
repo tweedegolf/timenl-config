@@ -5,17 +5,40 @@
 
   vars:
     statime:
+      version: "0.2.2"
       url: https://github.com/pendulum-project/statime/releases/download/v0.2.2/statime_0.2.2-1_amd64.deb
       checksum: sha256:55f5d0722437373aa08613173efdedef002708024be4d2f69200fbe62dbb3103
     ntpd_rs:
+      version: "1.4.0"
       url: https://github.com/pendulum-project/ntpd-rs/releases/download/v1.4.0/ntpd-rs_1.4.0-1_amd64.deb
       checksum: sha256:ae834d3356a320b009bbd85a851f48b9661c58d8b6668e3fd4ff70e31d28b305
 
   tasks:
+    - name: Check current statime version
+      ansible.builtin.shell: 'command -v statime > /dev/null && (statime --version 2>&1 | cut -d" " -f2) || echo "0.0.0"'
+      changed_when: false
+      register: statime_current_version
+
+    - name: Compare statime versions
+      ansible.builtin.set_fact:
+        statime_needs_update: "{{ statime_current_version.stdout | trim != statime.version }}"
+      changed_when: statime_needs_update | bool
+
+    - name: Check current ntpd-rs version
+      ansible.builtin.shell: 'command -v ntp-ctl > /dev/null && (ntp-ctl --version 2>&1 | cut -d" " -f2) || echo "0.0.0"'
+      changed_when: false
+      register: ntpd_rs_current_version
+
+    - name: Compare ntpd-rs versions
+      ansible.builtin.set_fact:
+        ntpd_rs_needs_update: "{{ ntpd_rs_current_version.stdout | trim != ntpd_rs.version }}"
+      changed_when: ntpd_rs_needs_update | bool
+
     - name: Create Download Directory
       ansible.builtin.tempfile:
         state: directory
       register: download_dir
+      when: statime_needs_update or ntpd_rs_needs_update
 
     - name: Download statime
       ansible.builtin.get_url:
@@ -24,10 +47,14 @@
         mode: "0644"
         checksum: "{{ statime.checksum }}"
       register: statime_deb
+      when: statime_needs_update | bool
 
     - name: Install statime
       ansible.builtin.apt:
         deb: "{{ statime_deb.dest }}"
+      notify:
+        - Restart statime
+      when: statime_needs_update | bool
 
     - name: Configure statime
       ansible.builtin.template:
@@ -36,10 +63,12 @@
         owner: root
         group: root
         mode: "0644"
+      notify:
+        - Restart statime
 
-    - name: (Re-)Start statime
+    - name: Enable statime
       ansible.builtin.systemd_service:
-        state: started
+        enabled: true
         name: statime
 
     - name: Download ntpd-rs
@@ -49,10 +78,14 @@
         mode: "0644"
         checksum: "{{ ntpd_rs.checksum }}"
       register: ntpd_rs_deb
+      when: ntpd_rs_needs_update | bool
 
     - name: Install ntpd-rs
       ansible.builtin.apt:
         deb: "{{ ntpd_rs_deb.dest }}"
+      notify:
+        - Restart ntpd-rs
+      when: ntpd_rs_needs_update | bool
 
     - name: Configure ntpd-rs
       ansible.builtin.template:
@@ -62,8 +95,52 @@
         group: root
         mode: "0644"
         validate: /usr/bin/ntp-ctl validate -c %s
+      notify:
+        - Restart ntpd-rs
 
-    - name: (Re-)Start ntpd-rs
+    - name: Create NTS-KE key dir
+      ansible.builtin.file:
+        path: /etc/ntpd-rs/tls
+        state: directory
+        mode: "0755"
+
+    - name: Deploy NTS-KE cert
+      ansible.builtin.copy:
+        src: test-keys/server.cert
+        dest: /etc/ntpd-rs/tls/cert.pem
+        owner: ntpd-rs
+        group: ntpd-rs
+        mode: "0644"
+      notify:
+        - Restart ntpd-rs
+
+    - name: Deploy NTS-KE key
+      ansible.builtin.copy:
+        src: test-keys/server.key
+        dest: /etc/ntpd-rs/tls/key.pem
+        owner: ntpd-rs
+        group: ntpd-rs
+        mode: "0400"
+      notify:
+        - Restart ntpd-rs
+
+    - name: Enable ntpd-rs
+      ansible.builtin.systemd_service:
+        enabled: true
+        name: ntpd-rs
+
+    - name: Enable ntpd-rs-metrics
+      ansible.builtin.systemd_service:
+        enabled: true
+        name: ntpd-rs-metrics
+
+  handlers:
+    - name: Restart statime
+      ansible.builtin.systemd_service:
+        state: restarted
+        name: statime
+
+    - name: Restart ntpd-rs
       ansible.builtin.systemd_service:
         state: restarted
         name: ntpd-rs

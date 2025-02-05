@@ -1,8 +1,16 @@
 edge_servers:
   vars:
     ansible_python_interpreter: /usr/bin/python3
+    acceptable_masters:
+      - "ec4670fffe0aad1a"
+      - "ec4670fffe0aad2b"
+      - "000efefffe030051"
   hosts:
     boven:
       ansible_host: test@10.0.8.2
+      uplink_interface: eno1
+      ptp_hw_clock: 0
     beneden:
       ansible_host: test@10.0.12.2
+      uplink_interface: eno1
+      ptp_hw_clock: 0
