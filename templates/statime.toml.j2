@@ -1,0 +1,13 @@
+loglevel = "info" # Other values include info, trace, debug, warn and error
+
+# ptp network to participate in
+sdo-id = 0
+domain = 0
+
+[[port]]
+interface = "eno1"
+network-mode = "ethernet" #can also be ipv4 or ethernet
+# If the network interface has hardware clock support, you can enable it
+# (see ethtool -T eno4) - kan wisselen?
+hardware-clock = 0
+# acceptable-master-list = ["ec4670fffe0aad1a", "ec4670fffe0aad2b"] # dat zijn M1000 en M3000 in VLAN83

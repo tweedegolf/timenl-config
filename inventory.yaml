@@ -1,0 +1,8 @@
+edge_servers:
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  hosts:
+    boven:
+      ansible_host: test@10.0.8.2
+    beneden:
+      ansible_host: test@10.0.12.2

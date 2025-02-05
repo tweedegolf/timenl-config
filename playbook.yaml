@@ -1,0 +1,69 @@
+---
+- name: Install statime
+  hosts: edge_servers
+  become: true
+
+  vars:
+    statime:
+      url: https://github.com/pendulum-project/statime/releases/download/v0.2.2/statime_0.2.2-1_amd64.deb
+      checksum: sha256:55f5d0722437373aa08613173efdedef002708024be4d2f69200fbe62dbb3103
+    ntpd_rs:
+      url: https://github.com/pendulum-project/ntpd-rs/releases/download/v1.4.0/ntpd-rs_1.4.0-1_amd64.deb
+      checksum: sha256:ae834d3356a320b009bbd85a851f48b9661c58d8b6668e3fd4ff70e31d28b305
+
+  tasks:
+    - name: Create Download Directory
+      ansible.builtin.tempfile:
+        state: directory
+      register: download_dir
+
+    - name: Download statime
+      ansible.builtin.get_url:
+        url: "{{ statime.url }}"
+        dest: "{{ download_dir.path }}"
+        mode: "0644"
+        checksum: "{{ statime.checksum }}"
+      register: statime_deb
+
+    - name: Install statime
+      ansible.builtin.apt:
+        deb: "{{ statime_deb.dest }}"
+
+    - name: Configure statime
+      ansible.builtin.template:
+        src: templates/statime.toml.j2
+        dest: /etc/statime/statime.toml
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: (Re-)Start statime
+      ansible.builtin.systemd_service:
+        state: started
+        name: statime
+
+    - name: Download ntpd-rs
+      ansible.builtin.get_url:
+        url: "{{ ntpd_rs.url }}"
+        dest: "{{ download_dir.path }}"
+        mode: "0644"
+        checksum: "{{ ntpd_rs.checksum }}"
+      register: ntpd_rs_deb
+
+    - name: Install ntpd-rs
+      ansible.builtin.apt:
+        deb: "{{ ntpd_rs_deb.dest }}"
+
+    - name: Configure ntpd-rs
+      ansible.builtin.template:
+        src: templates/ntpd-rs.toml.j2
+        dest: /etc/ntpd-rs/ntp.toml
+        owner: root
+        group: root
+        mode: "0644"
+        validate: /usr/bin/ntp-ctl validate -c %s
+
+    - name: (Re-)Start ntpd-rs
+      ansible.builtin.systemd_service:
+        state: restarted
+        name: ntpd-rs

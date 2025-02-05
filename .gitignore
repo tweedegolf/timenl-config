@@ -1,0 +1,4 @@
+.ansible/
+.jj/
+.venv/
+.vscode/
