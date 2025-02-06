@@ -8,6 +8,7 @@ priority2 = 255
 
 [observability]
 observation-path = "/var/run/statime/observe"
+metrics-exporter-listen = "{{ metrics_listen.statime }}"
 
 [[port]]
 interface = "{{ uplink_interface }}"

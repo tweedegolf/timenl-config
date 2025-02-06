@@ -1,6 +1,7 @@
 [observability]
 log-level = "info"
 observation-path = "/var/run/ntpd-rs/observe"
+metrics-exporter-listen = "{{ metrics_listen.ntpd_rs }}"
 
 [[server]]
 listen = "[::]:123"

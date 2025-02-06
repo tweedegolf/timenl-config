@@ -10,7 +10,9 @@ edge_servers:
       ansible_host: test@10.0.8.2
       uplink_interface: eno1
       ptp_hw_clock: 0
+      metrics_listen: { statime: 10.0.8.2:1234, ntpd_rs: 10.0.8.2:1235 } 
     beneden:
       ansible_host: test@10.0.12.2
       uplink_interface: eno1
       ptp_hw_clock: 0
+      metrics_listen: { statime: 10.0.12.2:1234, ntpd_rs: 10.0.12.2:1235 } 
