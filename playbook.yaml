@@ -5,9 +5,9 @@
 
   vars:
     statime:
-      version: "0.2.2"
-      url: https://github.com/pendulum-project/statime/releases/download/v0.2.2/statime_0.2.2-1_amd64.deb
-      checksum: sha256:55f5d0722437373aa08613173efdedef002708024be4d2f69200fbe62dbb3103
+      version: "0.3.0"
+      url: https://github.com/pendulum-project/statime/releases/download/v0.3.0/statime_0.3.0-1_amd64.deb
+      checksum: sha256:3f6bcc0b1dfa21e16b595b190a20dd0e62f5c342aea74d13216620b6f932d5a4
     ntpd_rs:
       version: "1.4.0"
       url: https://github.com/pendulum-project/ntpd-rs/releases/download/v1.4.0/ntpd-rs_1.4.0-1_amd64.deb
