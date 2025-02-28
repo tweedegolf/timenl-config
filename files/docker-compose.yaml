@@ -1,0 +1,28 @@
+services:
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    user: "1000"
+    environment:
+      NODE_ENV: development
+    network_mode: host
+
+  # TODO automate datasources setup: https://grafana.com/docs/grafana/latest/administration/provisioning/
+
+  prometheus:
+    image: ubuntu/prometheus
+    network_mode: host
+    command: --config.file=/etc/prometheus/prometheus.yml --log.level=debug
+    volumes:
+      - ./prometheus.yaml:/etc/prometheus/prometheus.yml
+      - ./prometheus:/prometheus
+
+  loki:
+    image: grafana/loki:latest
+    command: -config.file=/etc/loki/loki-config.yaml
+    network_mode: host
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yaml:/etc/loki/loki-config.yaml

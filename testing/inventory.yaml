@@ -30,3 +30,6 @@ all:
           grandmaster_identity: "{{ grandmaster_id }}"
         monitor:
           ansible_host: "ubuntu@{{ ips.monitor[0].address }}"
+          # TODO deduplicate with upstairs
+          e1: { statime: "[{{ ips.e1[2].address }}]:1234", ntpd_rs: "[{{ ips.e1[2].address }}]:1235" }
+          e2: { statime: "[{{ ips.e2[2].address }}]:1234", ntpd_rs: "[{{ ips.e2[2].address }}]:1235" }

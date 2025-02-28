@@ -168,9 +168,15 @@
 
   handlers:
     - name: Restart statime
-      ansible.builtin.systemd_service:
-        state: restarted
-        name: statime
+      block:
+        - name: restart statime-daemon
+          ansible.builtin.systemd_service:
+            state: restarted
+            name: statime
+        - name: restart statime-metrics-exporter
+          ansible.builtin.systemd_service:
+            state: restarted
+            name: statime-metrics-exporter
 
     - name: Restart ntpd-rs
       block:
