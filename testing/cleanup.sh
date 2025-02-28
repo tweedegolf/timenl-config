@@ -10,8 +10,7 @@ done
 
 for image in $(lxc image list -c f -f csv)
 do
-    echo lxc image delete $image
-
+    lxc image delete $image
 done
 
 sleep 5
@@ -21,4 +20,4 @@ do
     lxc network delete $net
 done
 
-# lxc project delete timenl
+lxc project delete timenl
