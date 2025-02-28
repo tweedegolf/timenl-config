@@ -1,0 +1,69 @@
+all:
+  vars:
+    host_key_checking: false
+    ansible_python_interpreter: /usr/bin/python3
+    # NOTE: generated with `lxc ls -f json | jq '[.[] | {key: .name, value: [.state.network | to_entries | .[] | {name: .key, address: [.value.addresses.[].address] | map(select(test("^(fd0)")))[0]}] | map(select(.address != null)) | sort_by(.address)}] | from_entries'`
+    ips: {
+      "e1": [
+        {
+          "name": "enp5s0",
+          "address": "fd00::216:3eff:fec6:6a22"
+        },
+        {
+          "name": "enp7s0",
+          "address": "fd01::216:3eff:fe8c:6b0a"
+        },
+        {
+          "name": "enp6s0",
+          "address": "fd02::216:3eff:fe1e:9947"
+        }
+      ],
+      "e2": [
+        {
+          "name": "enp5s0",
+          "address": "fd00::216:3eff:feb8:6fc8"
+        },
+        {
+          "name": "enp7s0",
+          "address": "fd01::216:3eff:feb7:b0b7"
+        },
+        {
+          "name": "enp6s0",
+          "address": "fd02::216:3eff:fe82:efb2"
+        }
+      ],
+      "grandmaster": [
+        {
+          "name": "enp5s0",
+          "address": "fd01::216:3eff:fe8b:8490"
+        }
+      ],
+      "monitor": [
+        {
+          "name": "enp5s0",
+          "address": "fd02::216:3eff:febc:29aa"
+        }
+      ]
+    }
+  children:
+    edge_servers:
+      vars:
+        acceptable_masters:
+          - "ec4670fffe0aad1a"
+          - "ec4670fffe0aad2b"
+          - "000efefffe030051"
+      hosts:
+        e1:
+          ansible_host: "ubuntu@{{ ips.e1[0].address }}"
+          uplink_interface: "{{ ips.e1[1].name }}"
+          metrics_listen: { statime: "[{{ ips.e1[2].address }}]:1234", ntpd_rs: "[{{ ips.e1[2].address }}]:1235" }
+        e2:
+          ansible_host: "ubuntu@{{ ips.e2[0].address }}"
+          uplink_interface: "{{ ips.e2[1].name }}"
+          metrics_listen: { statime: "[{{ ips.e2[2].address }}]:1234", ntpd_rs: "[{{ ips.e2[2].address }}]:1235" }
+    others:
+      hosts:
+        grandmaster:
+          ansible_host: "ubuntu@{{ ips.grandmaster[0].address }}"
+        monitor:
+          ansible_host: "ubuntu@{{ ips.monitor[0].address }}"

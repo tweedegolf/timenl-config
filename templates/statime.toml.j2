@@ -16,7 +16,7 @@ interface = "{{ uplink_interface }}"
 network-mode = "ethernet" # can be ipv4, ipv6, or ethernet
 # If the network interface has hardware clock support, you can enable it
 # (see ethtool -T {{ uplink_interface }})
-hardware-clock = {{ ptp_hw_clock }}
+hardware-clock = auto
 {% if acceptable_masters|length > 0 %}
 acceptable-master-list = ["{{ acceptable_masters | join('", "') }}"]
 {% endif %}
