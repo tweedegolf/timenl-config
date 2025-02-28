@@ -31,17 +31,20 @@ lxc ls
 
 Updating the IP addresses: (TODO automate this step)
 ```bash
-lxc ls -f json | jq '[.[] | {key: .name, value: [.state.network | to_entries | .[] | {name: .key, address: [.value.addresses.[].address] | map(select(test("^(fd0)")))[0]}] | map(select(.address != null)) | sort_by(.address)}] | from_entries'
+lxc ls -f json | jq -c '[.[] | {key: .name, value: [.state.network | to_entries | .[] | {name: .key, address: [.value.addresses.[].address] | map(select(test("^(fd0)")))[0]}] | map(select(.address != null)) | sort_by(.address)}] | from_entries'
 ```
 
 And paste the output in `inventory.toml` in the vars.ips field.
 
 Running the playbook(s):
 ```bash
-ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.yaml ../playbook.yaml
+ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i inventory.yaml ../testing.playbook.yml ../playbook.yaml
 ```
 
 You should now have a set of VMs configured for running like on the real mashines and networks.
+
+
+## Debugging
 
 If you want to inspect a machine you can use:
 
@@ -54,6 +57,8 @@ lxc shell monitor
 # or
 lxc shell grandmaster
 ```
+
+You can also use wireshark to listen in on the three different networks.
 
 ## Cleaning up
 

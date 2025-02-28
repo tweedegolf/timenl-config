@@ -1,0 +1,51 @@
+---
+- name: Setup grandmaster
+  hosts: grandmaster
+  become: true
+
+  vars:
+    statime:
+      version: "0.3.0"
+      url: https://github.com/pendulum-project/statime/releases/download/v0.3.0/statime_0.3.0-1_amd64.deb
+      checksum: sha256:3f6bcc0b1dfa21e16b595b190a20dd0e62f5c342aea74d13216620b6f932d5a4
+
+  tasks:
+    - name: Create Download Directory
+      ansible.builtin.tempfile:
+        state: directory
+      register: download_dir
+
+    - name: Download statime
+      ansible.builtin.get_url:
+        url: "{{ statime.url }}"
+        dest: "{{ download_dir.path }}"
+        mode: "0644"
+        checksum: "{{ statime.checksum }}"
+      register: statime_deb
+
+    - name: Install statime
+      ansible.builtin.apt:
+        deb: "{{ statime_deb.dest }}"
+      notify:
+        - Restart statime
+
+    - name: Configure statime
+      ansible.builtin.template:
+        src: templates/grandmaster.toml.j2
+        dest: /etc/statime/statime.toml
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - Restart statime
+
+    - name: Enable statime
+      ansible.builtin.systemd_service:
+        enabled: true
+        name: statime
+
+  handlers:
+    - name: Restart statime
+      ansible.builtin.systemd_service:
+        state: restarted
+        name: statime

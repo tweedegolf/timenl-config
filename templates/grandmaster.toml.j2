@@ -1,0 +1,17 @@
+loglevel = "info"
+
+# ptp network to participate in
+sdo-id = 0
+domain = 0
+priority1 = 64
+priority2 = 64
+
+identity = "{{ grandmaster_identity }}"
+
+[observability]
+observation-path = "/var/run/statime/observe"
+metrics-exporter-listen = "{{ metrics_listen.statime }}"
+
+[[port]]
+interface = "{{ uplink_interface }}"
+network-mode = "ipv6" # can be ipv4, ipv6, or ethernet
