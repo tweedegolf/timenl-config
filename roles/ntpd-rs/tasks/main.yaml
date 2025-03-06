@@ -1,0 +1,90 @@
+- name: Check current version
+  ansible.builtin.shell: 'command -v ntp-ctl > /dev/null && (ntp-ctl --version 2>&1 | cut -d" " -f2) || echo "0.0.0"'
+  changed_when: false
+  register: ntpd_rs_current_version
+
+- name: Compare versions
+  ansible.builtin.set_fact:
+    ntpd_rs_needs_update: "{{ ntpd_rs_current_version.stdout | trim != ntpd_rs.version }}"
+  changed_when: ntpd_rs_needs_update | bool
+
+- name: Download and setup new version
+  when: ntpd_rs_needs_update | bool
+  block:
+    - name: Create Download Directory
+      ansible.builtin.tempfile:
+        state: directory
+      register: download_dir
+
+    - name: Download
+      ansible.builtin.get_url:
+        url: "{{ ntpd_rs.url }}"
+        dest: "{{ download_dir.path }}"
+        mode: "0644"
+        checksum: "{{ ntpd_rs.checksum }}"
+      register: ntpd_rs_deb
+
+    - name: Remove systemd-timesyncd
+      ansible.builtin.apt:
+        name: systemd-timesyncd
+        state: absent
+
+    - name: Install
+      ansible.builtin.apt:
+        deb: "{{ ntpd_rs_deb.dest }}"
+      notify:
+        - Restart ntpd-rs
+
+    - name: Remove download
+      ansible.builtin.file:
+        state: absent
+        path: "{{ download_dir.path }}"
+
+  # End of download and setup
+
+- name: Configure
+  ansible.builtin.template:
+    src: templates/ntpd-rs.toml.j2
+    dest: /etc/ntpd-rs/ntp.toml
+    owner: root
+    group: root
+    mode: "0644"
+    validate: /usr/bin/ntp-ctl validate -c %s
+  notify:
+    - Restart ntpd-rs
+
+- name: Create NTS-KE key dir
+  ansible.builtin.file:
+    path: /etc/ntpd-rs/tls
+    state: directory
+    mode: "0755"
+
+- name: Deploy NTS-KE cert
+  ansible.builtin.copy:
+    src: test-keys/server.cert
+    dest: /etc/ntpd-rs/tls/cert.pem
+    owner: ntpd-rs
+    group: ntpd-rs
+    mode: "0644"
+  notify:
+    - Restart ntpd-rs
+
+- name: Deploy NTS-KE key
+  ansible.builtin.copy:
+    src: test-keys/server.key
+    dest: /etc/ntpd-rs/tls/key.pem
+    owner: ntpd-rs
+    group: ntpd-rs
+    mode: "0400"
+  notify:
+    - Restart ntpd-rs
+
+- name: Enable service
+  ansible.builtin.systemd_service:
+    enabled: true
+    name: ntpd-rs
+
+- name: Enable metrics service
+  ansible.builtin.systemd_service:
+    enabled: true
+    name: ntpd-rs-metrics
