@@ -13,5 +13,5 @@ observation-path = "/var/run/statime/observe"
 metrics-exporter-listen = "{{ metrics_listen.statime }}"
 
 [[port]]
-interface = "{{ uplink_interface }}"
-network-mode = "ipv6" # can be ipv4, ipv6, or ethernet
+interface = "{{ statime_uplink_interface }}"
+network-mode = "{{ statime_network_mode }}"

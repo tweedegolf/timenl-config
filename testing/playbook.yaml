@@ -50,7 +50,6 @@
         state: restarted
         name: statime
 
-
 - name: Setup monitoring
   hosts: monitor
   become: true
@@ -66,39 +65,33 @@
       notify:
         - Restart docker
 
-    - name: Copy docker-compose.yaml
+    - name: Copy docker-compose.yaml and files
       ansible.builtin.copy:
-        src: files/docker-compose.yaml
-        dest: /root/docker-compose.yaml
+        src: files/monitor
+        dest: /root/
         owner: root
         group: root
-        mode: '0644'
-      notify:
-        - Restart docker
-
-    - name: Copy lock config 
-      ansible.builtin.copy:
-        src: files/loki-config.yaml
-        dest: /root/loki-config.yaml
-        owner: root
-        group: root
-        mode: '0644'
+        mode: "0775"
       notify:
         - Restart docker
 
     - name: Copy prometheus config
       ansible.builtin.template:
         src: templates/prometheus.yaml.j2
-        dest: /root/prometheus.yaml
+        dest: /root/monitor/prometheus.yaml
         owner: root
         group: root
         mode: "0644"
       notify:
         - Restart docker
 
+    - name: Up docker
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: /root/monitor
+
   handlers:
     - name: Restart docker
       ansible.builtin.command:
         cmd: docker compose restart
-        chdir: /root
-  
+        chdir: /root/monitor
