@@ -1,0 +1,14 @@
+apiVersion: 1
+
+datasources:
+  - name: 'prometheus'
+    type: 'prometheus'
+    url: 'http://localhost:9090'
+    access: proxy
+    isDefault: true
+    version: 1
+    editable: true
+    jsonData:
+      httpMethod: GET # or POST if needed
+      timeInterval: "5s" # Adjust scraping interval as needed
+      exemplars: true # Enable exemplars if your Prometheus supports it
