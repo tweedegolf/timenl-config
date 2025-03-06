@@ -1,8 +1,8 @@
 loglevel = "info"
 
 # ptp network to participate in
-sdo-id = 0
-domain = 0
+sdo-id = {{ statime_sdo_id }}
+domain = {{ statime_domain }}
 priority1 = 255
 priority2 = 255
 slave-only = true
@@ -12,11 +12,11 @@ observation-path = "/var/run/statime/observe"
 metrics-exporter-listen = "{{ metrics_listen.statime }}"
 
 [[port]]
-interface = "{{ uplink_interface }}"
-network-mode = "ipv6" # can be ipv4, ipv6, or ethernet
-# If the network interface has hardware clock support, you can enable it
-# (see ethtool -T {{ uplink_interface }})
+interface = "{{ statime_uplink_interface }}"
+network-mode = "{{ statime_network_mode }}" # can be ipv4, ipv6, or ethernet
+# If the network interface has hardware clock support, this is enabled by default
+# (see ethtool -T {{ statime_uplink_interface }})
 hardware-clock = "auto"
-{% if acceptable_masters|length > 0 %}
-acceptable-master-list = ["{{ acceptable_masters | join('", "') }}"]
+{% if statime_acceptable_masters|length > 0 %}
+acceptable-master-list = ["{{ statime_acceptable_masters | join('", "') }}"]
 {% endif %}

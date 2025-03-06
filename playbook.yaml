@@ -4,135 +4,167 @@
   become: true
 
   vars:
+    # The statime version used, the latest version can be found at
+    # https://github.com/pendulum-project/statime/releases/
     statime:
       version: "0.3.0"
       url: https://github.com/pendulum-project/statime/releases/download/v0.3.0/statime_0.3.0-1_amd64.deb
       checksum: sha256:3f6bcc0b1dfa21e16b595b190a20dd0e62f5c342aea74d13216620b6f932d5a4
+    # The ntpd-rs version used, the latest version can be found at
+    # https://github.com/pendulum-project/ntpd-rs/releases/
     ntpd_rs:
-      version: "1.4.0"
-      url: https://github.com/pendulum-project/ntpd-rs/releases/download/v1.4.0/ntpd-rs_1.4.0-1_amd64.deb
-      checksum: sha256:ae834d3356a320b009bbd85a851f48b9661c58d8b6668e3fd4ff70e31d28b305
+      version: "1.5.0"
+      url: https://github.com/pendulum-project/ntpd-rs/releases/download/v1.5.0/ntpd-rs_1.5.0-1_amd64.deb
+      checksum: sha256:dbbfad4d0395868a369a37cb394f3c8b164c73c9aed6f8b004d58e18c6e1d477
 
   tasks:
-    - name: Check current statime version
-      ansible.builtin.shell: 'command -v statime > /dev/null && (statime --version 2>&1 | cut -d" " -f2) || echo "0.0.0"'
-      changed_when: false
-      register: statime_current_version
+    - name: Install/update and configure statime
+      block:
+        - name: Check current statime version
+          ansible.builtin.shell: 'command -v statime > /dev/null && (statime --version 2>&1 | cut -d" " -f2) || echo "0.0.0"'
+          changed_when: false
+          register: statime_current_version
 
-    - name: Compare statime versions
-      ansible.builtin.set_fact:
-        statime_needs_update: "{{ statime_current_version.stdout | trim != statime.version }}"
-      changed_when: statime_needs_update | bool
+        - name: Compare statime versions
+          ansible.builtin.set_fact:
+            statime_needs_update: "{{ statime_current_version.stdout | trim != statime.version }}"
+          changed_when: statime_needs_update | bool
 
-    - name: Check current ntpd-rs version
-      ansible.builtin.shell: 'command -v ntp-ctl > /dev/null && (ntp-ctl --version 2>&1 | cut -d" " -f2) || echo "0.0.0"'
-      changed_when: false
-      register: ntpd_rs_current_version
+        - name: Download and setup new statime version
+          when: statime_needs_update | bool
+          block:
+            - name: Create Download Directory
+              ansible.builtin.tempfile:
+                state: directory
+              register: download_dir
 
-    - name: Compare ntpd-rs versions
-      ansible.builtin.set_fact:
-        ntpd_rs_needs_update: "{{ ntpd_rs_current_version.stdout | trim != ntpd_rs.version }}"
-      changed_when: ntpd_rs_needs_update | bool
+            - name: Download statime
+              ansible.builtin.get_url:
+                url: "{{ statime.url }}"
+                dest: "{{ download_dir.path }}"
+                mode: "0644"
+                checksum: "{{ statime.checksum }}"
+              register: statime_deb
 
-    - name: Create Download Directory
-      ansible.builtin.tempfile:
-        state: directory
-      register: download_dir
-      when: statime_needs_update or ntpd_rs_needs_update
+            - name: Install statime
+              ansible.builtin.apt:
+                deb: "{{ statime_deb.dest }}"
+              notify:
+                - Restart statime
 
-    - name: Download statime
-      ansible.builtin.get_url:
-        url: "{{ statime.url }}"
-        dest: "{{ download_dir.path }}"
-        mode: "0644"
-        checksum: "{{ statime.checksum }}"
-      register: statime_deb
-      when: statime_needs_update | bool
+            - name: Remove download
+              ansible.buildin.file:
+                state: absent
+                path: "{{ download_dir.path }}"
 
-    - name: Install statime
-      ansible.builtin.apt:
-        deb: "{{ statime_deb.dest }}"
-      notify:
-        - Restart statime
-      when: statime_needs_update | bool
+          # End of download and setup of statime
 
-    - name: Configure statime
-      ansible.builtin.template:
-        src: templates/statime.toml.j2
-        dest: /etc/statime/statime.toml
-        owner: root
-        group: root
-        mode: "0644"
-      notify:
-        - Restart statime
+        - name: Configure statime
+          ansible.builtin.template:
+            src: templates/statime.toml.j2
+            dest: /etc/statime/statime.toml
+            owner: root
+            group: root
+            mode: "0644"
+          notify:
+            - Restart statime
 
-    - name: Enable statime
-      ansible.builtin.systemd_service:
-        enabled: true
-        name: statime
+        - name: Enable statime
+          ansible.builtin.systemd_service:
+            enabled: true
+            name: statime
 
-    - name: Download ntpd-rs
-      ansible.builtin.get_url:
-        url: "{{ ntpd_rs.url }}"
-        dest: "{{ download_dir.path }}"
-        mode: "0644"
-        checksum: "{{ ntpd_rs.checksum }}"
-      register: ntpd_rs_deb
-      when: ntpd_rs_needs_update | bool
+      # End of statime block
 
-    - name: Install ntpd-rs
-      ansible.builtin.apt:
-        deb: "{{ ntpd_rs_deb.dest }}"
-      notify:
-        - Restart ntpd-rs
-      when: ntpd_rs_needs_update | bool
+    - name: Install/update and configure ntpd-rs
+      block:
+        - name: Check current ntpd-rs version
+          ansible.builtin.shell: 'command -v ntp-ctl > /dev/null && (ntp-ctl --version 2>&1 | cut -d" " -f2) || echo "0.0.0"'
+          changed_when: false
+          register: ntpd_rs_current_version
 
-    - name: Configure ntpd-rs
-      ansible.builtin.template:
-        src: templates/ntpd-rs.toml.j2
-        dest: /etc/ntpd-rs/ntp.toml
-        owner: root
-        group: root
-        mode: "0644"
-        validate: /usr/bin/ntp-ctl validate -c %s
-      notify:
-        - Restart ntpd-rs
+        - name: Compare ntpd-rs versions
+          ansible.builtin.set_fact:
+            ntpd_rs_needs_update: "{{ ntpd_rs_current_version.stdout | trim != ntpd_rs.version }}"
+          changed_when: ntpd_rs_needs_update | bool
 
-    - name: Create NTS-KE key dir
-      ansible.builtin.file:
-        path: /etc/ntpd-rs/tls
-        state: directory
-        mode: "0755"
+        - name: Download and setup new ntpd-rs version
+          when: ntpd_rs_needs_update | bool
+          block:
+            - name: Create Download Directory
+              ansible.builtin.tempfile:
+                state: directory
+              register: download_dir
 
-    - name: Deploy NTS-KE cert
-      ansible.builtin.copy:
-        src: test-keys/server.cert
-        dest: /etc/ntpd-rs/tls/cert.pem
-        owner: ntpd-rs
-        group: ntpd-rs
-        mode: "0644"
-      notify:
-        - Restart ntpd-rs
+            - name: Download ntpd-rs
+              ansible.builtin.get_url:
+                url: "{{ ntpd_rs.url }}"
+                dest: "{{ download_dir.path }}"
+                mode: "0644"
+                checksum: "{{ ntpd_rs.checksum }}"
+              register: ntpd_rs_deb
 
-    - name: Deploy NTS-KE key
-      ansible.builtin.copy:
-        src: test-keys/server.key
-        dest: /etc/ntpd-rs/tls/key.pem
-        owner: ntpd-rs
-        group: ntpd-rs
-        mode: "0400"
-      notify:
-        - Restart ntpd-rs
+            - name: Install ntpd-rs
+              ansible.builtin.apt:
+                deb: "{{ ntpd_rs_deb.dest }}"
+              notify:
+                - Restart ntpd-rs
 
-    - name: Enable ntpd-rs
-      ansible.builtin.systemd_service:
-        enabled: true
-        name: ntpd-rs
+            - name: Remove download
+              ansible.buildin.file:
+                state: absent
+                path: "{{ download_dir.path }}"
 
-    - name: Enable ntpd-rs-metrics
-      ansible.builtin.systemd_service:
-        enabled: true
-        name: ntpd-rs-metrics
+          # End of download and setup ntpd-rs
+
+        - name: Configure ntpd-rs
+          ansible.builtin.template:
+            src: templates/ntpd-rs.toml.j2
+            dest: /etc/ntpd-rs/ntp.toml
+            owner: root
+            group: root
+            mode: "0644"
+            validate: /usr/bin/ntp-ctl validate -c %s
+          notify:
+            - Restart ntpd-rs
+
+        - name: Create NTS-KE key dir
+          ansible.builtin.file:
+            path: /etc/ntpd-rs/tls
+            state: directory
+            mode: "0755"
+
+        - name: Deploy NTS-KE cert
+          ansible.builtin.copy:
+            src: test-keys/server.cert
+            dest: /etc/ntpd-rs/tls/cert.pem
+            owner: ntpd-rs
+            group: ntpd-rs
+            mode: "0644"
+          notify:
+            - Restart ntpd-rs
+
+        - name: Deploy NTS-KE key
+          ansible.builtin.copy:
+            src: test-keys/server.key
+            dest: /etc/ntpd-rs/tls/key.pem
+            owner: ntpd-rs
+            group: ntpd-rs
+            mode: "0400"
+          notify:
+            - Restart ntpd-rs
+
+        - name: Enable ntpd-rs
+          ansible.builtin.systemd_service:
+            enabled: true
+            name: ntpd-rs
+
+        - name: Enable ntpd-rs-metrics
+          ansible.builtin.systemd_service:
+            enabled: true
+            name: ntpd-rs-metrics
+
+      # End of ntpd-rs block
 
   handlers:
     - name: Restart statime
@@ -141,6 +173,12 @@
         name: statime
 
     - name: Restart ntpd-rs
-      ansible.builtin.systemd_service:
-        state: restarted
-        name: ntpd-rs
+      block:
+        - name: restart ntp-daemon
+          ansible.builtin.systemd_service:
+            state: restarted
+            name: ntpd-rs
+        - name: restart ntp-metrics-exporter
+          ansible.builtin.systemd_service:
+            state: restarted
+            name: ntpd-rs-metrics

@@ -1,18 +1,37 @@
+# All configuration should proceed under this `edge_servers` key, as that is
+# the key on which the playbook operates
 edge_servers:
+
+  # Variables that are defined for all hosts to be the same
   vars:
+    # Path to a python3 interpreter
     ansible_python_interpreter: /usr/bin/python3
-    acceptable_masters:
+    # List of acceptable masters in the PTP network for statime (use empty array if not used)
+    statime_acceptable_masters:
       - "ec4670fffe0aad1a"
       - "ec4670fffe0aad2b"
       - "000efefffe030051"
+    # Network mode for the PTP network used
+    statime_network_mode: "ipv6"
+    # SDO id for the PTP network used
+    statime_sdo_id: "0"
+    # Domain for the PTP network used
+    statime_domain: "0"
+
+  # Definition of each of the hosts for which the setup needs to be deployed
   hosts:
+    # An example host definition, each of the keys under this name defines
+    # a variable used for this host specifically
     boven:
+      # Address or domain name (including username) on which this host is reachable
       ansible_host: test@10.0.8.2
-      uplink_interface: eno1
-      ptp_hw_clock: 0
-      metrics_listen: { statime: 10.0.8.2:1234, ntpd_rs: 10.0.8.2:1235 } 
+      # Interface used by statime for connecting to the PTP network
+      statime_uplink_interface: eno1
+      # Metrics exporter listen addresses
+      metrics_listen: { statime: 10.0.8.2:1234, ntpd_rs: 10.0.8.2:1235 }
+
+    # A second example host
     beneden:
       ansible_host: test@10.0.12.2
-      uplink_interface: eno1
-      ptp_hw_clock: 0
-      metrics_listen: { statime: 10.0.12.2:1234, ntpd_rs: 10.0.12.2:1235 } 
+      statime_uplink_interface: eno1
+      metrics_listen: { statime: 10.0.12.2:1234, ntpd_rs: 10.0.12.2:1235 }
