@@ -1,6 +1,8 @@
+auth_enabled: false
+
 server:
   http_listen_port: 3100
-  log_level: debug
+  log_level: info
 
 common:
   instance_addr: 127.0.0.1
@@ -37,5 +39,5 @@ ruler:
 # Refer to the buildReport method to see what goes into a report.
 #
 # If you would like to disable reporting, uncomment the following lines:
-#analytics:
-reporting_enabled: false
+analytics:
+  reporting_enabled: false

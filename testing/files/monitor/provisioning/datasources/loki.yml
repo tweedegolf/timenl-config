@@ -1,0 +1,14 @@
+apiVersion: 1
+
+datasources:
+  - name: "loki"
+    type: "loki"
+    url: "http://localhost:3100"
+    access: proxy
+    isDefault: false
+    version: 1
+    editable: true
+    jsonData:
+      httpMethod: GET # or POST if needed
+      timeInterval: "5s" # Adjust scraping interval as needed
+      exemplars: true # Enable exemplars if your Prometheus supports it
