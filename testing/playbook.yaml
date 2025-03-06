@@ -49,3 +49,49 @@
       ansible.builtin.systemd_service:
         state: restarted
         name: statime
+
+- name: Setup monitoring
+  hosts: monitor
+  become: true
+
+  tasks:
+    - name: Install docker compose
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+        pkg:
+          - docker.io
+          - docker-compose-v2
+      notify:
+        - Restart docker
+
+    - name: Copy docker-compose.yaml and files
+      ansible.builtin.copy:
+        src: files/monitor
+        dest: /root/
+        owner: root
+        group: root
+        mode: "0775"
+      notify:
+        - Restart docker
+
+    - name: Copy prometheus config
+      ansible.builtin.template:
+        src: templates/prometheus.yaml.j2
+        dest: /root/monitor/prometheus.yaml
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - Restart docker
+
+    - name: Up docker
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: /root/monitor
+
+  handlers:
+    - name: Restart docker
+      ansible.builtin.command:
+        cmd: docker compose restart
+        chdir: /root/monitor

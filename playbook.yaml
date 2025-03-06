@@ -53,7 +53,7 @@
                 - Restart statime
 
             - name: Remove download
-              ansible.buildin.file:
+              ansible.builtin.file:
                 state: absent
                 path: "{{ download_dir.path }}"
 
@@ -104,6 +104,11 @@
                 checksum: "{{ ntpd_rs.checksum }}"
               register: ntpd_rs_deb
 
+            - name: Remove systemd-timesyncd
+              ansible.builtin.apt:
+                name: systemd-timesyncd
+                state: absent
+
             - name: Install ntpd-rs
               ansible.builtin.apt:
                 deb: "{{ ntpd_rs_deb.dest }}"
@@ -111,7 +116,7 @@
                 - Restart ntpd-rs
 
             - name: Remove download
-              ansible.buildin.file:
+              ansible.builtin.file:
                 state: absent
                 path: "{{ download_dir.path }}"
 
@@ -167,18 +172,25 @@
       # End of ntpd-rs block
 
   handlers:
-    - name: Restart statime
+    - name: Restart statime-daemon
       ansible.builtin.systemd_service:
         state: restarted
         name: statime
+      listen: Restart statime
+    - name: Restart statime-metrics-exporter
+      ansible.builtin.systemd_service:
+        state: restarted
+        name: statime-metrics-exporter
+      listen: Restart statime
 
-    - name: Restart ntpd-rs
-      block:
-        - name: restart ntp-daemon
-          ansible.builtin.systemd_service:
-            state: restarted
-            name: ntpd-rs
-        - name: restart ntp-metrics-exporter
-          ansible.builtin.systemd_service:
-            state: restarted
-            name: ntpd-rs-metrics
+    #- name: Restart ntpd-rs
+    - name: Restart ntp-daemon
+      ansible.builtin.systemd_service:
+        state: restarted
+        name: ntpd-rs
+      listen: Restart ntpd-rs
+    - name: Restart ntp-metrics-exporter
+      ansible.builtin.systemd_service:
+        state: restarted
+        name: ntpd-rs-metrics
+      listen: Restart ntpd-rs
