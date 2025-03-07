@@ -1,0 +1,26 @@
+loki.relabel "journal" {
+  forward_to = []
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+
+  rule {
+    source_labels = ["__journal__hostname"]
+    target_label  = "hostname"
+  }
+}
+
+loki.source.journal "read"  {
+  forward_to    = [loki.write.endpoint.receiver]
+  relabel_rules = loki.relabel.journal.rules
+  path          = "/var/log/journal"
+  labels        = {component = "loki.source.journal"}
+}
+
+loki.write "endpoint" {
+  endpoint {
+    url ="http://{{ ips.monitor[0].address }}:3100/loki/api/v1/push"
+  }
+}

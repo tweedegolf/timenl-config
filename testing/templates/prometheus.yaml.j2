@@ -2,6 +2,9 @@ global:
   scrape_interval: 1s
 
 scrape_configs:
-  - job_name: 'edge_server'
+  - job_name: 'ntpd-rs'
     static_configs:
-      - targets: [ '{{ e1.statime }}', '{{ e1.ntpd_rs }}', '{{ e2.statime }}', '{{ e2.ntpd_rs }}' ]
+      - targets: [ '{{ e1.ntpd_rs }}', '{{ e2.ntpd_rs }}' ]
+  - job_name: 'statime'
+    static_configs:
+      - targets: [ '{{ e1.statime }}', '{{ e2.statime }}' ]

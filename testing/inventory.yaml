@@ -9,25 +9,6 @@ all:
     statime_network_mode: "ipv6"
 
     # NOTE: generated with `lxc ls -f json | jq -c '[.[] | {key: .name, value: [.state.network | to_entries | .[] | {name: .key, address: [.value.addresses.[].address] | map(select(test("^(fd0)")))[0]}] | map(select(.address != null)) | sort_by(.address)}] | from_entries'`
-    ips:
-      {
-        "e1":
-          [
-            { "name": "enp5s0", "address": "fd00::216:3eff:fec8:70c4" },
-            { "name": "enp7s0", "address": "fd01::216:3eff:fe43:71d7" },
-            { "name": "enp6s0", "address": "fd02::216:3eff:fef1:afc5" },
-          ],
-        "e2":
-          [
-            { "name": "enp5s0", "address": "fd00::216:3eff:feb5:1306" },
-            { "name": "enp7s0", "address": "fd01::216:3eff:fecd:92e2" },
-            { "name": "enp6s0", "address": "fd02::216:3eff:fe6e:bfb1" },
-          ],
-        "grandmaster":
-          [{ "name": "enp5s0", "address": "fd01::216:3eff:fe06:61f7" }],
-        "monitor":
-          [{ "name": "enp5s0", "address": "fd02::216:3eff:fe78:c91f" }],
-      }
   children:
     edge_servers:
       vars:

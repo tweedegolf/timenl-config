@@ -95,3 +95,52 @@
       ansible.builtin.command:
         cmd: docker compose restart
         chdir: /root/monitor
+
+- name: Setup log collection
+  become: true
+  hosts: edge_servers
+
+  tasks:
+    - name: Add alloy source
+      ansible.builtin.deb822_repository:
+        name: grafana-alloy
+        types: deb
+        uris: https://apt.grafana.com
+        suites: stable
+        components: main
+        architectures: amd64
+        signed_by: https://apt.grafana.com/gpg.key
+      register: apt_add
+
+    - name: apt update
+      ansible.builtin.apt:
+        update_cache: true
+      when: apt_add.changed | bool
+
+    - name: Install alloy
+      ansible.builtin.apt:
+        name: alloy
+        state: latest
+      notify:
+        - Restart alloy
+
+    - name: Configure alloy
+      ansible.builtin.template:
+        src: templates/config.alloy.j2
+        dest: /etc/alloy/config.alloy
+        owner: root
+        group: root
+        mode: "0644"
+      notify:
+        - Restart alloy
+
+    - name: Enable alloy
+      ansible.builtin.systemd_service:
+        enabled: true
+        name: alloy
+
+  handlers:
+    - name: Restart alloy
+      ansible.builtin.systemd_service:
+        state: restarted
+        name: alloy
