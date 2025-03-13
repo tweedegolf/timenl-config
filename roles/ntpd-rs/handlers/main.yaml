@@ -1,0 +1,11 @@
+- name: Restart ntp-daemon
+  ansible.builtin.systemd_service:
+    state: restarted
+    name: ntpd-rs
+  listen: Restart ntpd-rs
+
+- name: Restart ntp-metrics-exporter
+  ansible.builtin.systemd_service:
+    state: restarted
+    name: ntpd-rs-metrics
+  listen: Restart ntpd-rs

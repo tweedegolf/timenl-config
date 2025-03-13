@@ -1,0 +1,11 @@
+- name: Restart statime-daemon
+  ansible.builtin.systemd_service:
+    state: restarted
+    name: statime
+  listen: Restart statime
+
+- name: Restart statime-metrics-exporter
+  ansible.builtin.systemd_service:
+    state: restarted
+    name: statime-metrics-exporter
+  listen: Restart statime
